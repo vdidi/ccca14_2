@@ -1,3 +1,4 @@
+import { validateCpf } from "./CpfValidator";
 import Logger from "./Logger";
 import SignupAccountDAO from "./SignupAccountDAO";
 
@@ -7,14 +8,25 @@ export default class Signup {
     }
 
     async execute (input: any) {
+		this.logger.log(`signup ${input.name}`);
+		input.accountId = crypto.randomUUID();
+		const account = await this.accountDAO.getByEmail(input.email);
+		if (account) throw new Error("Duplicated account");
+		if (this.isInvalidName(input.name)) throw new Error("Invalid name");
+		if (this.isInvalidEmail(input.email)) throw new Error("Invalid email");
+		if (!validateCpf(input.cpf)) throw new Error("Invalid cpf");
+		if (input.isDriver && this.isInvalidCarPlate(input.carPlate)) throw new Error("Invalid car plate");
+		await this.accountDAO.save(input);
+		return {
+			accountId: input.accountId
+		};
+	}
 
-    }
-
-    isValidName (name: string) {
+    isInvalidName (name: string) {
         return !name.match(/[a-zA-Z] [a-zA-Z]+/);
     }
 
-    isValidEmail (email: string) {
+    isInvalidEmail (email: string) {
         return !email.match(/^(.+)@(.+)$/);
     }
 
